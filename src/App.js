@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 // import { PropTypes } from "prop-types";
 
@@ -26,7 +26,7 @@ const TodoFormContainer = styled.section`
   padding-bottom: 3%;
   margin-bottom: 4%;
 `;
-// const TodoFormGroup = styled.form``;
+// const TodoFormGroup = styled.form``;// 因為 form本身的送出動作會直接重新render，除非使用 e.preventDefault 來防止送出
 const TodoFormInput = styled.input`
   margin: 0 2% 0 4%;
   padding: 0 5px;
@@ -55,21 +55,19 @@ const TodFormSubmit = styled.button`
   }
 `;
 // Todo form structure
-// const TodoListForm = ({ handleChange, handleAddClick, value }) => {
-//   return (
-//     <TodoFormContainer>
-//       <TodoFormGroup>
-//         <TodoFormInput
-//           onChange={handleChange}
-//           type="text"
-//           placeholder={"Add Todo ..."}
-//           value={value}
-//         />
-//         <TodFormSubmit onClick={handleAddClick}>Add</TodFormSubmit>
-//       </TodoFormGroup>
-//     </TodoFormContainer>
-//   );
-// };
+const TodoListForm = ({ handleChange, handleAddTodo, value }) => {
+  return (
+    <TodoFormContainer>
+      <TodoFormInput
+        onChange={handleChange}
+        type="text"
+        placeholder={"Add Todo ..."}
+        value={value}
+      />
+      <TodFormSubmit onClick={handleAddTodo}>Add</TodFormSubmit>
+    </TodoFormContainer>
+  );
+};
 
 const TodoListout = styled.section`
   border-radius: 5px 5px 0 5px;
@@ -192,7 +190,7 @@ const TodoItemBtnDelete = styled.button`
     color: #fde8d0;
   }
 `;
-const TodoListItem = ({ todo }) => {
+const TodoListItem = ({ todo, handleDeleteTodo }) => {
   return (
     <TodoItemContainer data-todo-id={todo.id}>
       <TodoItemContent>
@@ -202,26 +200,32 @@ const TodoListItem = ({ todo }) => {
       <TodoItemBtns>
         <TodoItemBtnStatus>Complete/not</TodoItemBtnStatus>
         <TodoItemBtnEdit>Edit</TodoItemBtnEdit>
-        <TodoItemBtnDelete>Delete</TodoItemBtnDelete>
+        <TodoItemBtnDelete
+          onClick={() => {
+            handleDeleteTodo(todo.id);
+          }}
+        >
+          Delete
+        </TodoItemBtnDelete>
       </TodoItemBtns>
     </TodoItemContainer>
   );
 };
-// const TodoListObjects = () => {
-//   return (
-//     <TodoListout>
-//       <TodoFilterGroup />
-//       <TodoListTotal>
-//         {5} complete, {3} incomplete, {8} in total.
-//       </TodoListTotal>
-//     </TodoListout>
-//   );
-// };
+const TodoListStatusManual = ({ total }) => {
+  return (
+    <>
+      <TodoFilterGroup />
+      <TodoListTotal>
+        {5} complete, {3} incomplete, {total} in total.
+      </TodoListTotal>
+    </>
+  );
+};
 
 // front render structure and render logics
 let id = 1;
 function App() {
-  // render todo functioning (test)
+  // listout todo functioning (with test example)
   const [todos, setTodos] = useState([
     {
       id: id,
@@ -233,7 +237,7 @@ function App() {
   const handleChange = (e) => {
     setValue(e.target.value);
   };
-  const handleAddClick = () => {
+  const handleAddTodo = () => {
     id++;
     setTodos([
       {
@@ -245,26 +249,28 @@ function App() {
     setValue("");
   };
 
+  // delete todo functioning
+  const handleDeleteTodo = (id) => {
+    setTodos(todos.filter((todo) => todo.id !== id));
+  };
+
   return (
     <Body>
       <TodoListContainer>
         <TodoListTitle>Todo List</TodoListTitle>
-        <TodoFormContainer>
-          <TodoFormInput
-            onChange={handleChange}
-            type="text"
-            placeholder={"Add Todo ..."}
-            value={value}
-          />
-          <TodFormSubmit onClick={handleAddClick}>Add</TodFormSubmit>
-        </TodoFormContainer>
+        <TodoListForm
+          value={value}
+          handleChange={handleChange}
+          handleAddTodo={handleAddTodo}
+        />
         <TodoListout>
-          <TodoFilterGroup />
-          <TodoListTotal>
-            {5} complete, {3} incomplete, {todos.length} in total.
-          </TodoListTotal>
+          <TodoListStatusManual total={todos.length} />
           {todos.map((todo) => (
-            <TodoListItem key={todo.id} todo={todo} />
+            <TodoListItem
+              key={todo.id}
+              todo={todo}
+              handleDeleteTodo={handleDeleteTodo}
+            />
           ))}
         </TodoListout>
       </TodoListContainer>
