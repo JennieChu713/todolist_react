@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import styled from "styled-components";
+// import { PropTypes } from "prop-types";
 
+// CSS in JS
 const Body = styled.div`
   background-color: #ede4cd;
   display: flex;
@@ -24,7 +26,7 @@ const TodoFormContainer = styled.section`
   padding-bottom: 3%;
   margin-bottom: 4%;
 `;
-const TodoFormGroup = styled.form``;
+// const TodoFormGroup = styled.form``;
 const TodoFormInput = styled.input`
   margin: 0 2% 0 4%;
   padding: 0 5px;
@@ -52,16 +54,22 @@ const TodFormSubmit = styled.button`
     color: white;
   }
 `;
-const TodoListForm = () => {
-  return (
-    <TodoFormContainer>
-      <TodoFormGroup>
-        <TodoFormInput placeholder={"Add Todo ..."} />
-        <TodFormSubmit>Add</TodFormSubmit>
-      </TodoFormGroup>
-    </TodoFormContainer>
-  );
-};
+// Todo form structure
+// const TodoListForm = ({ handleChange, handleAddClick, value }) => {
+//   return (
+//     <TodoFormContainer>
+//       <TodoFormGroup>
+//         <TodoFormInput
+//           onChange={handleChange}
+//           type="text"
+//           placeholder={"Add Todo ..."}
+//           value={value}
+//         />
+//         <TodFormSubmit onClick={handleAddClick}>Add</TodFormSubmit>
+//       </TodoFormGroup>
+//     </TodoFormContainer>
+//   );
+// };
 
 const TodoListout = styled.section`
   border-radius: 5px 5px 0 5px;
@@ -77,7 +85,9 @@ const TodoListFilterBtns = styled.div`
     border-radius: 5px;
     transition: all 0.3s;
     color: #b39b6f;
-    border: 1px solid #b39b6f;
+    border: none;
+    border-top: 1px solid #b39b6f;
+    border-bottom: 1px solid #b39b6f;
   }
 `;
 const UndoneBtn = styled.button`
@@ -142,7 +152,7 @@ const TodoFilterGroup = () => {
 };
 const TodoItemContainer = styled.div`
   border-radius: 500px;
-  margin: 0 auto;
+  margin: 0 auto 5%;
   padding: 4% 2%;
   font-size: 1.2rem;
   width: 90%;
@@ -182,12 +192,12 @@ const TodoItemBtnDelete = styled.button`
     color: #fde8d0;
   }
 `;
-const TodoListItem = () => {
+const TodoListItem = ({ todo }) => {
   return (
-    <TodoItemContainer>
+    <TodoItemContainer data-todo-id={todo.id}>
       <TodoItemContent>
-        <TodoItemCheckbox type={"checkbox"} name={123} id={123} data-id={123} />
-        <TodoItemLabel for={123}>THE TO DO</TodoItemLabel>
+        <TodoItemCheckbox type="checkbox" name={todo.id} id={todo.id} />
+        <TodoItemLabel for={todo.id}>{todo.content}</TodoItemLabel>
       </TodoItemContent>
       <TodoItemBtns>
         <TodoItemBtnStatus>Complete/not</TodoItemBtnStatus>
@@ -197,25 +207,66 @@ const TodoListItem = () => {
     </TodoItemContainer>
   );
 };
-const TodoListObjects = () => {
-  return (
-    <TodoListout>
-      <TodoFilterGroup />
-      <TodoListTotal>
-        {5} complete, {3} incomplete, {8} in total.
-      </TodoListTotal>
-      <TodoListItem />
-    </TodoListout>
-  );
-};
+// const TodoListObjects = () => {
+//   return (
+//     <TodoListout>
+//       <TodoFilterGroup />
+//       <TodoListTotal>
+//         {5} complete, {3} incomplete, {8} in total.
+//       </TodoListTotal>
+//     </TodoListout>
+//   );
+// };
 
+// front render structure and render logics
+let id = 1;
 function App() {
+  // render todo functioning (test)
+  const [todos, setTodos] = useState([
+    {
+      id: id,
+      content: "example",
+    },
+  ]);
+  //add todo functioning
+  const [value, setValue] = useState("");
+  const handleChange = (e) => {
+    setValue(e.target.value);
+  };
+  const handleAddClick = () => {
+    id++;
+    setTodos([
+      {
+        id: id,
+        content: value,
+      },
+      ...todos,
+    ]);
+    setValue("");
+  };
+
   return (
     <Body>
       <TodoListContainer>
         <TodoListTitle>Todo List</TodoListTitle>
-        <TodoListForm />
-        <TodoListObjects />
+        <TodoFormContainer>
+          <TodoFormInput
+            onChange={handleChange}
+            type="text"
+            placeholder={"Add Todo ..."}
+            value={value}
+          />
+          <TodFormSubmit onClick={handleAddClick}>Add</TodFormSubmit>
+        </TodoFormContainer>
+        <TodoListout>
+          <TodoFilterGroup />
+          <TodoListTotal>
+            {5} complete, {3} incomplete, {todos.length} in total.
+          </TodoListTotal>
+          {todos.map((todo) => (
+            <TodoListItem key={todo.id} todo={todo} />
+          ))}
+        </TodoListout>
       </TodoListContainer>
     </Body>
   );
