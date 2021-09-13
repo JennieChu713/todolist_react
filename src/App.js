@@ -1,4 +1,10 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+  useContext,
+  createContext,
+  useEffect,
+  useRef,
+} from "react";
 import styled from "styled-components";
 // import { PropTypes } from "prop-types";
 
@@ -138,13 +144,20 @@ const TodoListTotal = styled.div`
   }
 `;
 const TodoFilterGroup = () => {
+  const {
+    handleUndoneTodos,
+    handleDoneTodos,
+    handleAllTodos,
+    handleClearAllTodos,
+    handleClearDoneTodos,
+  } = useContext(FilterBtnsContext);
   return (
     <TodoListFilterBtns>
-      <UndoneBtn>Undone</UndoneBtn>
-      <DoneBtn>Done</DoneBtn>
-      <AllBtn>All</AllBtn>
-      <ClearDoneBtn>Clear Done</ClearDoneBtn>
-      <ClearAllBtn>Clear All</ClearAllBtn>
+      <UndoneBtn onClick={handleUndoneTodos}>Undone</UndoneBtn>
+      <DoneBtn onClick={handleDoneTodos}>Done</DoneBtn>
+      <AllBtn onClick={handleAllTodos}>All</AllBtn>
+      <ClearDoneBtn onClick={handleClearDoneTodos}>Clear Done</ClearDoneBtn>
+      <ClearAllBtn onClick={handleClearAllTodos}>Clear All</ClearAllBtn>
     </TodoListFilterBtns>
   );
 };
@@ -163,6 +176,32 @@ const TodoItemContent = styled.div``;
 const TodoItemDetail = styled.article`
   ${(props) =>
     props.$isDone && `text-decoration: line-through; color: #bc8f8f;`}
+`;
+const TodoItemEditContent = styled.div`
+  display: flex;
+  * {
+    font-size: 1.1rem;
+  }
+`;
+const TodoItemEditInput = styled.input`
+  width: 26rem;
+  border: none;
+  background: rgba(238, 232, 170, 0.5);
+  outline: none;
+  padding: 5px;
+  box-sizing: border-box;
+  margin-right: 2%;
+`;
+const TodoItemEditSubmit = styled.button`
+  background: transparent;
+  border: none;
+  transition: all 0.3s;
+  border-radius: 5px;
+  color: #d7a98c;
+  &:hover {
+    background: #ee836f;
+    color: #fde8d0;
+  }
 `;
 const TodoItemBtns = styled.div`
   * {
@@ -192,31 +231,70 @@ const TodoItemBtnDelete = styled.button`
     color: #fde8d0;
   }
 `;
-const TodoListItem = ({ todo, handleDeleteTodo, handleCompletionTodo }) => {
+const TodoListItem = ({
+  todo,
+  handleDeleteTodo,
+  handleCompletionTodo,
+  handleEditTodo,
+  handleRenewTodo,
+  handleEditChange,
+}) => {
   return (
     <TodoItemContainer data-todo-id={todo.id}>
-      <TodoItemContent>
-        <TodoItemDetail id={todo.id} $isDone={todo.isDone}>
-          {todo.content}
-        </TodoItemDetail>
-      </TodoItemContent>
-      <TodoItemBtns>
-        <TodoItemBtnStatus
-          onClick={() => {
-            handleCompletionTodo(todo.id);
-          }}
-        >
-          {todo.isDone ? "Undone" : "Done"}
-        </TodoItemBtnStatus>
-        <TodoItemBtnEdit>Edit</TodoItemBtnEdit>
-        <TodoItemBtnDelete
-          onClick={() => {
-            handleDeleteTodo(todo.id);
-          }}
-        >
-          Delete
-        </TodoItemBtnDelete>
-      </TodoItemBtns>
+      {todo.isEditing ? (
+        <TodoItemEditContent>
+          <TodoItemEditInput
+            type="text"
+            id={todo.id}
+            $isDone={todo.isDone}
+            $isEdit={todo.isEditing}
+            defaultValue={todo.content}
+            onChange={handleEditChange}
+          />
+          <TodoItemEditSubmit
+            onClick={() => {
+              handleRenewTodo(todo.id);
+            }}
+          >
+            Edit
+          </TodoItemEditSubmit>
+        </TodoItemEditContent>
+      ) : (
+        <>
+          <TodoItemContent>
+            <TodoItemDetail
+              id={todo.id}
+              $isDone={todo.isDone}
+              $isEdit={todo.isEditing}
+            >
+              {todo.content}
+            </TodoItemDetail>
+          </TodoItemContent>
+          <TodoItemBtns>
+            <TodoItemBtnStatus
+              onClick={() => {
+                handleCompletionTodo(todo.id);
+              }}
+            >
+              {todo.isDone ? "Undone" : "Done"}
+            </TodoItemBtnStatus>
+            <TodoItemBtnEdit
+              onClick={() => {
+                handleEditTodo(todo.id);
+              }}
+            >
+              Edit
+            </TodoItemBtnEdit>
+            <TodoItemBtnDelete
+              onClick={() => {
+                handleDeleteTodo(todo.id);
+              }}
+            >
+              Delete
+            </TodoItemBtnDelete>
+          </TodoItemBtns>
+        </>
+      )}
     </TodoItemContainer>
   );
 };
@@ -231,51 +309,141 @@ const TodoListStatusManual = ({ total, done, undone }) => {
   );
 };
 
+// useContext for filter buttons
+const FilterBtnsContext = createContext();
+
+// reserve todoList in localstorage
+function writeTodoLocalStorage(todos) {
+  window.localStorage.setItem("todos", JSON.stringify(todos));
+}
+
 // front render structure and render logics
-let id = 1;
 function App() {
-  // listout todo functioning (with test example)
-  const [todos, setTodos] = useState([
-    {
-      id: id,
-      content: "example",
-      isDone: false,
-    },
-  ]);
-  //add todo functioning
+  let id = useRef(1);
+  // todos initialize (with test example)
+  const [todos, setTodos] = useState(() => {
+    let todoData = window.localStorage.getItem("todos") || "";
+    if (todoData.length) {
+      todoData = JSON.parse(todoData);
+      if (!id) {
+        id.current = todoData[0].id + 1;
+      }
+    } else {
+      todoData = [];
+    }
+    return todoData;
+  });
+  // add todo value initialize
   const [value, setValue] = useState("");
+
+  // filterTodos initialize
+  const [preservTodos, setPreservTodos] = useState(todos);
+
+  // edit todo value initialize
+  const [editValue, setEditValue] = useState("");
+
+  useEffect(() => {
+    writeTodoLocalStorage(todos);
+    console.log(todos);
+  }, [todos]);
+
+  // add todo functioning
   const handleChange = (e) => {
+    setValue(e.target.value);
+    if (e.target.value === "") {
+      return;
+    }
     setValue(e.target.value);
   };
   const handleAddTodo = () => {
-    id++;
-    setTodos([
+    //id.current += 1;
+    const addTodo = [
       {
-        id: id,
+        id: id.current,
         content: value,
         isDone: false,
+        isEditing: false,
       },
       ...todos,
-    ]);
+    ];
+    setTodos(addTodo);
+    setPreservTodos(addTodo);
+    id.current += 1;
     setValue("");
   };
 
   // delete todo functioning
   const handleDeleteTodo = (id) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
+    const deleteTodo = todos.filter((todo) => todo.id !== id);
+    setTodos(deleteTodo);
+    setPreservTodos(deleteTodo);
   };
 
   // checkout todo completion status functioning
   const handleCompletionTodo = (id) => {
-    setTodos(
-      todos.map((todo) => {
-        if (todo.id !== id) return todo;
-        return {
-          ...todo,
-          isDone: !todo.isDone,
-        };
-      })
-    );
+    const getTodo = todos.map((todo) => {
+      if (todo.id !== id) return todo;
+      return {
+        ...todo,
+        isDone: !todo.isDone,
+      };
+    });
+    setTodos(getTodo);
+    setPreservTodos(getTodo);
+  };
+  // edit Todo item's content functioning
+  const handleEditTodo = (id) => {
+    const getTodo = todos.map((todo) => {
+      if (todo.id !== id) return todo;
+      return {
+        ...todo,
+        isEditing: !todo.isEditing,
+      };
+    });
+    setTodos(getTodo);
+  };
+  const handleEditChange = (e) => {
+    if (e.target.value === "") {
+      return;
+    }
+    setEditValue(e.target.value);
+  };
+  const handleRenewTodo = (id) => {
+    const getTodo = todos.map((todo) => {
+      if (todo.id !== id) return todo;
+      return {
+        ...todo,
+        content: editValue,
+        isEditing: false,
+      };
+    });
+    setValue("");
+    setTodos(getTodo);
+    setPreservTodos(getTodo);
+  };
+
+  // filter buttons functions
+  // filterout Undone todos functioning
+  const handleUndoneTodos = () => {
+    setTodos(preservTodos.filter((todo) => !todo.isDone));
+  };
+  //filterout Done todos functioning
+  const handleDoneTodos = () => {
+    setTodos(preservTodos.filter((todo) => todo.isDone));
+  };
+  // listout all todos
+  const handleAllTodos = () => {
+    setTodos([...preservTodos]);
+  };
+  // clear all done todos
+  const handleClearDoneTodos = () => {
+    setTodos(preservTodos.filter((todo) => !todo.isDone));
+    setPreservTodos(preservTodos.filter((todo) => !todo.isDone));
+  };
+  // clear all todos
+  const handleClearAllTodos = () => {
+    setTodos([]);
+    setPreservTodos([]);
   };
 
   return (
@@ -288,17 +456,31 @@ function App() {
           handleAddTodo={handleAddTodo}
         />
         <TodoListout>
-          <TodoListStatusManual
-            total={todos.length}
-            done={todos.filter((todo) => todo.isDone).length}
-            undone={todos.filter((todo) => !todo.isDone).length}
-          />
+          <FilterBtnsContext.Provider
+            value={{
+              handleUndoneTodos,
+              handleDoneTodos,
+              handleAllTodos,
+              handleClearDoneTodos,
+              handleClearAllTodos,
+            }}
+          >
+            <TodoListStatusManual
+              total={preservTodos.length}
+              done={preservTodos.filter((todo) => todo.isDone).length}
+              undone={preservTodos.filter((todo) => !todo.isDone).length}
+              allTodos={preservTodos}
+            />
+          </FilterBtnsContext.Provider>
           {todos.map((todo) => (
             <TodoListItem
               key={todo.id}
               todo={todo}
               handleDeleteTodo={handleDeleteTodo}
               handleCompletionTodo={handleCompletionTodo}
+              handleEditTodo={handleEditTodo}
+              handleEditChange={handleEditChange}
+              handleRenewTodo={handleRenewTodo}
             />
           ))}
         </TodoListout>
