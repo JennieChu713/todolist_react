@@ -151,17 +151,19 @@ const TodoFilterGroup = () => {
 const TodoItemContainer = styled.div`
   border-radius: 500px;
   margin: 0 auto 5%;
-  padding: 4% 2%;
+  padding: 4% 3%;
   font-size: 1.2rem;
-  width: 90%;
+  width: 80%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background-color: rgba(248, 244, 230, 0.7);
 `;
 const TodoItemContent = styled.div``;
-const TodoItemCheckbox = styled.input``;
-const TodoItemLabel = styled.label``;
+const TodoItemDetail = styled.article`
+  ${(props) =>
+    props.$isDone && `text-decoration: line-through; color: #bc8f8f;`}
+`;
 const TodoItemBtns = styled.div`
   * {
     font-size: 1.1rem;
@@ -190,15 +192,22 @@ const TodoItemBtnDelete = styled.button`
     color: #fde8d0;
   }
 `;
-const TodoListItem = ({ todo, handleDeleteTodo }) => {
+const TodoListItem = ({ todo, handleDeleteTodo, handleCompletionTodo }) => {
   return (
     <TodoItemContainer data-todo-id={todo.id}>
       <TodoItemContent>
-        <TodoItemCheckbox type="checkbox" name={todo.id} id={todo.id} />
-        <TodoItemLabel for={todo.id}>{todo.content}</TodoItemLabel>
+        <TodoItemDetail id={todo.id} $isDone={todo.isDone}>
+          {todo.content}
+        </TodoItemDetail>
       </TodoItemContent>
       <TodoItemBtns>
-        <TodoItemBtnStatus>Complete/not</TodoItemBtnStatus>
+        <TodoItemBtnStatus
+          onClick={() => {
+            handleCompletionTodo(todo.id);
+          }}
+        >
+          {todo.isDone ? "Undone" : "Done"}
+        </TodoItemBtnStatus>
         <TodoItemBtnEdit>Edit</TodoItemBtnEdit>
         <TodoItemBtnDelete
           onClick={() => {
@@ -211,12 +220,12 @@ const TodoListItem = ({ todo, handleDeleteTodo }) => {
     </TodoItemContainer>
   );
 };
-const TodoListStatusManual = ({ total }) => {
+const TodoListStatusManual = ({ total, done, undone }) => {
   return (
     <>
       <TodoFilterGroup />
       <TodoListTotal>
-        {5} complete, {3} incomplete, {total} in total.
+        {done} Complete, {undone} Incomplete, {total} in Total.
       </TodoListTotal>
     </>
   );
@@ -230,6 +239,7 @@ function App() {
     {
       id: id,
       content: "example",
+      isDone: false,
     },
   ]);
   //add todo functioning
@@ -243,6 +253,7 @@ function App() {
       {
         id: id,
         content: value,
+        isDone: false,
       },
       ...todos,
     ]);
@@ -252,6 +263,19 @@ function App() {
   // delete todo functioning
   const handleDeleteTodo = (id) => {
     setTodos(todos.filter((todo) => todo.id !== id));
+  };
+
+  // checkout todo completion status functioning
+  const handleCompletionTodo = (id) => {
+    setTodos(
+      todos.map((todo) => {
+        if (todo.id !== id) return todo;
+        return {
+          ...todo,
+          isDone: !todo.isDone,
+        };
+      })
+    );
   };
 
   return (
@@ -264,12 +288,17 @@ function App() {
           handleAddTodo={handleAddTodo}
         />
         <TodoListout>
-          <TodoListStatusManual total={todos.length} />
+          <TodoListStatusManual
+            total={todos.length}
+            done={todos.filter((todo) => todo.isDone).length}
+            undone={todos.filter((todo) => !todo.isDone).length}
+          />
           {todos.map((todo) => (
             <TodoListItem
               key={todo.id}
               todo={todo}
               handleDeleteTodo={handleDeleteTodo}
+              handleCompletionTodo={handleCompletionTodo}
             />
           ))}
         </TodoListout>
