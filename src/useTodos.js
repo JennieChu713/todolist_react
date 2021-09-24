@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // reserve todoList in localstorage
 function writeTodoLocalStorage(todos) {
@@ -11,9 +11,9 @@ export default function useTodos() {
   // todos initialize
   const [todos, setTodos] = useState(() => {
     let todoData = window.localStorage.getItem("todos") || "";
-    if (todoData.length) {
+    if (todoData) {
       todoData = JSON.parse(todoData);
-      if (!id) {
+      if (todoData.length && todoData[0].id) {
         id.current = todoData[0].id + 1;
       }
     } else {
