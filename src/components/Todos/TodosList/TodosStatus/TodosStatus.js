@@ -1,4 +1,4 @@
-import React, { useContext, createContext } from "react";
+import React from "react";
 import styled from "styled-components";
 
 const TodoListTotal = styled.div`
